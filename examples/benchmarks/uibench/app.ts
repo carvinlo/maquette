@@ -12,7 +12,7 @@ let createTableCell = (text: string): Component => {
 
   return {
     renderMaquette: () => {
-      return h('td.TableCell', { key: text, onclick: handleClick }, text);
+      return h('td.TableCell', { key: text, onclick: handleClick }, [ text ]);
     }
   };
 };
@@ -110,7 +110,7 @@ let createMain = (state: AppState | null) => {
       updateTable();
     },
     renderMaquette: () => {
-      let children: (VNode | null | undefined)[] | null | undefined;
+      let children: (VNode | null | undefined)[] | undefined;
       if (state) {
         switch (state.location) {
           case 'table':
@@ -129,7 +129,7 @@ let createMain = (state: AppState | null) => {
   };
 };
 
-uibench.init('Maquette', 'dev');
+uibench.init('Maquette', 'dev2');
 
 let main = createMain(null);
 
