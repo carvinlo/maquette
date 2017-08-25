@@ -129,7 +129,7 @@ let createMain = (state: AppState | null) => {
   };
 };
 
-uibench.init('Maquette', 'dev2');
+uibench.init('Maquette', 'dev4');
 
 let main = createMain(null);
 

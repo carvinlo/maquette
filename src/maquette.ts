@@ -390,18 +390,39 @@ let toTextVNode = (data: string): VNode => {
   };
 };
 
-let appendChildren = function(parentSelector: string, insertions: VNodeChild[], main: VNode[]) {
-  for (let i = 0, length = insertions.length; i < length; i++) {
-    let item = insertions[i];
-    if (Array.isArray(item)) {
-      appendChildren(parentSelector, item, main);
+var flattenInto = function (parentSelector: string, insertions: VNodeChild[], main: VNodeChild[], mainIndex: number) {
+  for(var i = 0; i < insertions.length; i++) {
+    var item = insertions[i];
+    if(Array.isArray(item)) {
+      mainIndex = flattenInto(parentSelector, item, main, mainIndex);
     } else {
-      if (item !== null && item !== undefined) {
-        if (typeof item === 'string') {
-          item = toTextVNode(item);
+      if(item !== null && item !== undefined) {
+        if(!item.hasOwnProperty("vnodeSelector")) {
+          item = toTextVNode(item as string);
         }
-        main.push(item);
+        main.splice(mainIndex, 0, item);
+        mainIndex++;
       }
+    }
+  }
+  return mainIndex;
+};
+
+// removes nulls, flattens embedded arrays
+var flatten = function (parentSelector: string, children: VNodeChild[]) {
+  var index = 0;
+  while(index < children.length) {
+    var child = children[index];
+    if(child === null || child === undefined) {
+      children.splice(index, 1);
+    } else if(Array.isArray(child)) {
+      children.splice(index, 1);
+      index = flattenInto(parentSelector, child, children, index);
+    } else if(child.hasOwnProperty("vnodeSelector")) {
+      index++;
+    } else {
+      children[index] = toTextVNode(child as string);
+      index++;
     }
   }
 };
@@ -893,21 +914,20 @@ export let h: H = (selector: string, properties?: VNodeProperties, children?: VN
     properties = undefined;
   }
   let text: string | undefined;
-  let flattenedChildren: VNode[] | undefined;
   // Recognize a common special case where there is only a single text node
   if (children !== undefined && children.length ===  1 && typeof children[0] === 'string') {
     text = children[0] as string;
+    children = undefined;
   } else if (children) {
-    flattenedChildren = [];
-    appendChildren(selector, children, flattenedChildren);
-    if (flattenedChildren.length === 0) {
-      flattenedChildren = undefined;
+    flatten(selector, children);
+    if (children.length === 0) {
+      children = undefined;
     }
   }
   return {
     vnodeSelector: selector,
     properties: properties,
-    children: flattenedChildren,
+    children: children as any,
     text: (text === '') ? undefined : text,
     domNode: null
   };

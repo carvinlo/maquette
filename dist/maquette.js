@@ -57,18 +57,38 @@
             domNode: null
         };
     };
-    var appendChildren = function (parentSelector, insertions, main) {
-        for (var i = 0, length_1 = insertions.length; i < length_1; i++) {
+    var flattenInto = function (parentSelector, insertions, main, mainIndex) {
+        for (var i = 0; i < insertions.length; i++) {
             var item = insertions[i];
             if (Array.isArray(item)) {
-                appendChildren(parentSelector, item, main);
+                mainIndex = flattenInto(parentSelector, item, main, mainIndex);
             } else {
                 if (item !== null && item !== undefined) {
-                    if (typeof item === 'string') {
+                    if (!item.hasOwnProperty('vnodeSelector')) {
                         item = toTextVNode(item);
                     }
-                    main.push(item);
+                    main.splice(mainIndex, 0, item);
+                    mainIndex++;
                 }
+            }
+        }
+        return mainIndex;
+    };
+    // removes nulls, flattens embedded arrays
+    var flatten = function (parentSelector, children) {
+        var index = 0;
+        while (index < children.length) {
+            var child = children[index];
+            if (child === null || child === undefined) {
+                children.splice(index, 1);
+            } else if (Array.isArray(child)) {
+                children.splice(index, 1);
+                index = flattenInto(parentSelector, child, children, index);
+            } else if (child.hasOwnProperty('vnodeSelector')) {
+                index++;
+            } else {
+                children[index] = toTextVNode(child);
+                index++;
             }
         }
     };
@@ -525,21 +545,20 @@
             properties = undefined;
         }
         var text;
-        var flattenedChildren;
         // Recognize a common special case where there is only a single text node
         if (children !== undefined && children.length === 1 && typeof children[0] === 'string') {
             text = children[0];
+            children = undefined;
         } else if (children) {
-            flattenedChildren = [];
-            appendChildren(selector, children, flattenedChildren);
-            if (flattenedChildren.length === 0) {
-                flattenedChildren = undefined;
+            flatten(selector, children);
+            if (children.length === 0) {
+                children = undefined;
             }
         }
         return {
             vnodeSelector: selector,
             properties: properties,
-            children: flattenedChildren,
+            children: children,
             text: text === '' ? undefined : text,
             domNode: null
         };
